@@ -1,0 +1,16 @@
+{
+  "name": "sena-lms",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LMS del SENA - Técnico en Programación de Software",
+  "scripts": {
+    "instalar": "npm install --prefix server && npm install --prefix client",
+    "db": "npm --prefix server run db:setup",
+    "dev": "concurrently -n servidor,cliente -c green,blue \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "build:produccion": "npm install --prefix server --include=dev && npm install --prefix client --include=dev && npm run build --prefix client && npm run generar:pg --prefix server",
+    "start:produccion": "npm run start:produccion --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

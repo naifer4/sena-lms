@@ -1,0 +1,105 @@
+// Esquema para PRODUCCIÓN (despliegue gratis): PostgreSQL de Supabase.
+// Es idéntico a schema.prisma pero con provider "postgresql".
+// En desarrollo local se sigue usando schema.prisma (SQLite).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           Int         @id @default(autoincrement())
+  nombre       String
+  correo       String      @unique
+  passwordHash String
+  rol          String // "instructor" | "aprendiz"
+  creadoEn     DateTime    @default(now())
+  cursos       Curso[]     @relation("CursosDelInstructor")
+  matriculas   Matricula[]
+  evidencias   Evidencia[]
+}
+
+model Curso {
+  id           Int           @id @default(autoincrement())
+  nombre       String
+  descripcion  String?
+  ficha        String?
+  instructorId Int
+  creadoEn     DateTime      @default(now())
+  instructor   Usuario       @relation("CursosDelInstructor", fields: [instructorId], references: [id], onDelete: Cascade)
+  competencias Competencia[]
+  matriculas   Matricula[]
+}
+
+model Matricula {
+  cursoId    Int
+  aprendizId Int
+  creadoEn   DateTime @default(now())
+  curso      Curso    @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  aprendiz   Usuario  @relation(fields: [aprendizId], references: [id], onDelete: Cascade)
+
+  @@id([cursoId, aprendizId])
+}
+
+model Competencia {
+  id          Int         @id @default(autoincrement())
+  cursoId     Int
+  codigo      String
+  nombre      String
+  orden       Int
+  curso       Curso       @relation(fields: [cursoId], references: [id], onDelete: Cascade)
+  secciones   Seccion[]
+  actividades Actividad[]
+}
+
+model Seccion {
+  id            Int         @id @default(autoincrement())
+  competenciaId Int
+  tipo          String // guias | presentaciones | material_apoyo | instrumentos | planes_sesion | evidencias
+  competencia   Competencia @relation(fields: [competenciaId], references: [id], onDelete: Cascade)
+  materiales    Material[]
+
+  @@unique([competenciaId, tipo])
+}
+
+model Material {
+  id          Int      @id @default(autoincrement())
+  seccionId   Int
+  titulo      String
+  tipo        String // "archivo" | "enlace"
+  archivoPath String?
+  url         String?
+  creadoEn    DateTime @default(now())
+  seccion     Seccion  @relation(fields: [seccionId], references: [id], onDelete: Cascade)
+}
+
+model Actividad {
+  id            Int         @id @default(autoincrement())
+  competenciaId Int
+  codigo        String
+  titulo        String
+  descripcion   String?
+  competencia   Competencia @relation(fields: [competenciaId], references: [id], onDelete: Cascade)
+  evidencias    Evidencia[]
+}
+
+model Evidencia {
+  id                Int       @id @default(autoincrement())
+  actividadId       Int
+  aprendizId        Int
+  titulo            String
+  url               String
+  comentario        String?
+  creadoEn          DateTime  @default(now())
+  estado            String    @default("pendiente") // "pendiente" | "revisado"
+  nota              Float?
+  retroalimentacion String?
+  actividad         Actividad @relation(fields: [actividadId], references: [id], onDelete: Cascade)
+  aprendiz          Usuario   @relation(fields: [aprendizId], references: [id], onDelete: Cascade)
+
+  @@unique([actividadId, aprendizId])
+}
